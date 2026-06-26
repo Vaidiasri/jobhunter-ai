@@ -1,0 +1,6 @@
+# Personal files
+*.pdf
+
+# OS
+.DS_Store
+Thumbs.db

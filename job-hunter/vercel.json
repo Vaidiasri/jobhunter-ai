@@ -1,0 +1,14 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npx prisma generate && next build",
+  "installCommand": "npm install",
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "JSEARCH_API_KEY": "@jsearch_api_key",
+    "NEXT_PUBLIC_APP_URL": "@next_public_app_url"
+  },
+  "crons": [
+    { "path": "/api/digest/send",    "schedule": "30 2 * * *" },
+    { "path": "/api/reminders/check","schedule": "30 3 * * *" }
+  ]
+}
