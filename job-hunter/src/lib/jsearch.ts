@@ -37,12 +37,15 @@ function extractJobs(data: JSearchJob[] | { jobs: JSearchJob[] }): JSearchJob[] 
 const JSEARCH_BASE = "https://jsearch.p.rapidapi.com";
 
 const SEARCH_QUERIES = [
-  "full stack developer India",
-  "frontend developer React India",
-  "backend developer Node.js India",
-  "MERN stack developer India",
-  "software engineer TypeScript India",
-  "AI engineer LangChain India",
+  "full stack developer Bangalore",
+  "frontend developer React Noida",
+  "backend developer Node.js Gurgaon",
+  "MERN stack developer Bangalore",
+  "software engineer TypeScript Noida",
+  "AI engineer LangChain Gurgaon",
+  "full stack developer Delhi",
+  "frontend developer React Mumbai",
+  "software engineer Hyderabad",
 ];
 
 export async function fetchJobsFromJSearch(
@@ -81,9 +84,9 @@ export async function fetchJobsFromJSearch(
   return extractJobs(json.data);
 }
 
-export async function fetchAllJobQueries(noCache = false): Promise<JSearchJob[]> {
+export async function fetchAllJobQueries(noCache = false, datePosted: "today" | "3days" | "week" | "month" = "week"): Promise<JSearchJob[]> {
   const results = await Promise.allSettled(
-    SEARCH_QUERIES.map((q) => fetchJobsFromJSearch(q, 1, "week", noCache))
+    SEARCH_QUERIES.map((q) => fetchJobsFromJSearch(q, 1, datePosted, noCache))
   );
   return results
     .filter((r): r is PromiseFulfilledResult<JSearchJob[]> => r.status === "fulfilled")

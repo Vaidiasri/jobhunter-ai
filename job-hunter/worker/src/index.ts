@@ -3,6 +3,7 @@ import { chromium } from "playwright";
 import { PrismaClient } from "@prisma/client";
 import { applyLinkedIn } from "./platforms/linkedin";
 import { applyNaukri } from "./platforms/naukri";
+import { scrapeNaukriJobs } from "./platforms/naukriScraper";
 
 const prisma = new PrismaClient();
 
@@ -154,17 +155,43 @@ async function processQueue() {
   console.log(`[worker] Run complete — processed ${pending.length} jobs`);
 }
 
+async function checkNaukriScrape() {
+  const settings = await prisma.userSettings.findUnique({ where: { id: "singleton" } });
+  if (!settings?.naukriScrapePending) return;
+
+  console.log("[worker] Starting Naukri job scrape...");
+  const browser = await chromium.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-blink-features=AutomationControlled"],
+  });
+
+  try {
+    const count = await scrapeNaukriJobs(browser);
+    console.log(`[worker] Naukri scrape complete: ${count} jobs saved`);
+  } catch (err) {
+    console.error("[worker] Naukri scrape failed:", err);
+  } finally {
+    await browser.close();
+    await prisma.userSettings.update({
+      where: { id: "singleton" },
+      data: { naukriScrapePending: false },
+    });
+  }
+}
+
 async function main() {
   console.log(`[worker] JobHunter auto-apply worker started`);
   console.log(`[worker] Interval: ${INTERVAL_MS / 1000 / 60}min`);
 
   await processQueue();
   await checkLinkedInScrape();
+  await checkNaukriScrape();
 
   setInterval(async () => {
     try {
       await processQueue();
       await checkLinkedInScrape();
+      await checkNaukriScrape();
     } catch (err) {
       console.error("[worker] Run failed:", err);
     }

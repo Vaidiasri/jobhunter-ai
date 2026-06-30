@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { fetchAllJobQueries, fetchJobsFromJSearch, detectPlatform, isQuickApply, meetsMinSalary } from "@/lib/jsearch";
+import { fetchAllJobQueries, fetchJobsFromSerp, detectPlatform, isQuickApply, meetsMinSalary } from "@/lib/serpapi";
 import { computeAtsScore } from "@/lib/ats";
 import { getOrCreateSettings } from "@/lib/settings";
 
@@ -10,13 +10,16 @@ export async function GET(req: NextRequest) {
   const platform = searchParams.get("platform") ?? undefined;
   const remote = searchParams.get("remote");
   const quickApply = searchParams.get("quickApply");
+  const last24h = searchParams.get("last24h");
+  const location = searchParams.get("location") ?? undefined;
   const refresh = searchParams.get("refresh") === "true";
 
   try {
     if (refresh) {
+      const dateFilter = last24h === "true" ? "today" : "week";
       const rawJobs = query
-        ? await fetchJobsFromJSearch(query, 1, "week", true)
-        : await fetchAllJobQueries(true);
+        ? await fetchJobsFromSerp(query, location ?? "India", dateFilter, true)
+        : await fetchAllJobQueries(true, dateFilter);
 
       const filtered = rawJobs.filter((j) => meetsMinSalary(j, 6));
 
@@ -74,6 +77,11 @@ export async function GET(req: NextRequest) {
     if (platform) where.platform = platform;
     if (remote === "true") where.isRemote = true;
     if (quickApply === "true") where.isQuickApply = true;
+    if (last24h === "true") {
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      where.postedAt = { gte: cutoff };
+    }
+    if (location) where.location = { contains: location, mode: "insensitive" };
 
     const jobs = await prisma.job.findMany({
       where,

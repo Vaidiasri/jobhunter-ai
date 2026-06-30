@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Clock, Zap, ExternalLink, Bookmark, BookmarkCheck, Sparkles, BarChart2, FileText } from "lucide-react";
+import { MapPin, Clock, Zap, ExternalLink, Bookmark, BookmarkCheck, Sparkles, BarChart2, FileText, Send } from "lucide-react";
 import { cn, formatSalary, timeAgo, PLATFORM_COLORS } from "@/lib/utils";
 import AiDrawer from "./AiDrawer";
 import AtsScoreCard from "./AtsScoreCard";
@@ -171,6 +171,14 @@ export default function JobCard({ job, onSave, onQueue }: JobCardProps) {
           >
             <FileText className="w-3.5 h-3.5" /> Tailor Resume
           </button>
+          <a
+            href={job.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Send className="w-3.5 h-3.5" /> Apply Now
+          </a>
         </div>
 
         {atsOpen && (

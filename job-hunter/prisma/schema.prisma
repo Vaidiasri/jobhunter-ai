@@ -121,15 +121,16 @@ model LinkedInConnection {
 }
 
 model UserSettings {
-  id            String    @id @default("singleton")
-  resumeText    String?   @db.Text
-  digestEmail   String?
-  reminderDays  Int       @default(7)
-  scrapePending Boolean   @default(false)
-  lastScrapedAt DateTime?
-  calendarToken String?   @db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                   String    @id @default("singleton")
+  resumeText           String?   @db.Text
+  digestEmail          String?
+  reminderDays         Int       @default(7)
+  scrapePending        Boolean   @default(false)
+  lastScrapedAt        DateTime?
+  naukriScrapePending  Boolean   @default(false)
+  calendarToken        String?   @db.Text
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 enum Platform {

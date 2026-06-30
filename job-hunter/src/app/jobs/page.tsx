@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { RefreshCw, Search, Filter, Zap, Wifi } from "lucide-react";
+import { RefreshCw, Search, Filter, Zap, Wifi, Clock, MapPin } from "lucide-react";
 import JobCard from "@/components/JobCard";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +23,8 @@ type Job = {
   queueItems: { status: string }[];
 };
 
-const PLATFORMS = ["ALL", "LINKEDIN", "INDEED", "GLASSDOOR", "OTHER"];
+const PLATFORMS = ["ALL", "LINKEDIN", "NAUKRI", "INDEED", "OTHER"];
+const INDIA_CITIES = ["All Cities", "Noida", "Gurgaon", "Bangalore", "Delhi", "Mumbai", "Hyderabad", "Pune", "Chennai"];
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -33,6 +34,10 @@ export default function JobsPage() {
   const [platform, setPlatform] = useState("ALL");
   const [remoteOnly, setRemoteOnly] = useState(false);
   const [quickApplyOnly, setQuickApplyOnly] = useState(false);
+  const [last24h, setLast24h] = useState(false);
+  const [city, setCity] = useState("All Cities");
+  const [naukriQueuing, setNaukriQueuing] = useState(false);
+  const [naukriStatus, setNaukriStatus] = useState<"idle" | "queued">("idle");
 
   const fetchJobs = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true);
@@ -43,6 +48,8 @@ export default function JobsPage() {
     if (platform !== "ALL") params.set("platform", platform);
     if (remoteOnly) params.set("remote", "true");
     if (quickApplyOnly) params.set("quickApply", "true");
+    if (last24h) params.set("last24h", "true");
+    if (city !== "All Cities") params.set("location", city);
 
     const res = await fetch(`/api/jobs?${params}`);
     const data = await res.json();
@@ -52,7 +59,7 @@ export default function JobsPage() {
     setJobs(sorted);
     setLoading(false);
     setRefreshing(false);
-  }, [platform, remoteOnly, quickApplyOnly]);
+  }, [platform, remoteOnly, quickApplyOnly, last24h, city]);
 
   useEffect(() => { fetchJobs(); }, [fetchJobs]);
 
@@ -74,6 +81,13 @@ export default function JobsPage() {
     await fetchJobs();
   };
 
+  const handleFetchNaukri = async () => {
+    setNaukriQueuing(true);
+    const res = await fetch("/api/naukri/scrape", { method: "POST" });
+    if (res.ok) setNaukriStatus("queued");
+    setNaukriQueuing(false);
+  };
+
   const filtered = jobs.filter((j) =>
     search
       ? j.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -90,18 +104,28 @@ export default function JobsPage() {
             {loading ? "Loading..." : `${filtered.length} jobs matching your profile`}
           </p>
         </div>
-        <button
-          onClick={() => fetchJobs(true)}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors"
-        >
-          <RefreshCw className={cn("w-4 h-4", refreshing && "animate-spin")} />
-          {refreshing ? "Fetching..." : "Fetch New Jobs"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleFetchNaukri}
+            disabled={naukriQueuing || naukriStatus === "queued"}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 disabled:opacity-60 transition-colors"
+          >
+            {naukriStatus === "queued" ? "Naukri queued ✓" : naukriQueuing ? "Queuing..." : "Fetch Naukri Jobs"}
+          </button>
+          <button
+            onClick={() => fetchJobs(true)}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors"
+          >
+            <RefreshCw className={cn("w-4 h-4", refreshing && "animate-spin")} />
+            {refreshing ? "Fetching..." : "Fetch New Jobs"}
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6 shadow-sm space-y-3">
+        {/* Row 1: search + platform */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -129,6 +153,32 @@ export default function JobsPage() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Row 2: location + toggles */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <MapPin className="w-4 h-4 text-slate-400" />
+            <select
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {INDIA_CITIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={() => setLast24h(!last24h)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors",
+              last24h ? "bg-orange-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            )}
+          >
+            <Clock className="w-3.5 h-3.5" /> Last 24h
+          </button>
 
           <button
             onClick={() => setRemoteOnly(!remoteOnly)}
